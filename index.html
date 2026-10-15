@@ -77,6 +77,11 @@ footer{color:var(--mute);font-size:.78rem;padding:30px 22px 50px;max-width:980px
       <h4>Paciente · sensores</h4>
       <div class="tile"><div><div class="lab">Temperatura</div><div class="val" id="vT">36,6<small>°C</small></div></div><svg class="sp" viewBox="0 0 96 36"><polyline id="sT"/></svg></div>
       <div class="tile"><div><div class="lab">Pressão arterial</div><div class="val" id="vP">118/76<small>mmHg</small></div></div><svg class="sp" viewBox="0 0 96 36"><polyline id="sP"/></svg></div>
+      <div class="tile"><div><div class="lab">Frequência cardíaca</div><div class="val" id="vH">72<small>bpm</small></div></div><svg class="sp" viewBox="0 0 96 36"><polyline id="sH"/></svg></div>
+      <div class="tile"><div><div class="lab">Saturação de oxigênio</div><div class="val" id="vO">98<small>%</small></div></div><svg class="sp" viewBox="0 0 96 36"><polyline id="sO"/></svg></div>
+      <div class="tile"><div><div class="lab">Taxa de resposta imunológica</div><div class="val" id="vE">12<small>%</small></div></div></div>
+      
+      
       <div class="tile"><div><div class="lab">Caixa de medicamentos</div><div class="val" id="vM" style="font-size:1.4rem">Dose registrada ✓</div></div></div>
     </div>
     <div class="panel">
@@ -90,9 +95,13 @@ footer{color:var(--mute);font-size:.78rem;padding:30px 22px 50px;max-width:980px
     <button class="p" id="b1">Simular intercorrência</button>
     <button id="b2">Dose esquecida</button>
     <button id="b3">Cair a conexão</button>
+    <button id="b5">Resposta imunológica</button>
+    <button id="b8">Frequência e oxigênio</button>
+    
+    <button id="b7">Teleconsulta</button>
     <button id="b4">Restabelecer</button>
   </div>
-  <p class="note">Simulação conceitual com valores fictícios e limites ilustrativos, sem valor clínico. A base do estudo cita aplicativos, telemedicina e testes point-of-care; a integração com sensores é uma ilustração.</p>
+  <p class="note">Simulação conceitual com valores fictícios e limites ilustrativos, sem valor clínico. A base do estudo cita aplicativos, telemedicina e testes point-of-care; a integração com sensores (inclusive frequência cardíaca, oxigênio e resposta imunológica) é uma ilustração.</p>
 </div></section>
 
 <h2 class="lim-t w rv" id="lim">Nem tudo é tecnologia.</h2>
@@ -103,26 +112,33 @@ footer{color:var(--mute);font-size:.78rem;padding:30px 22px 50px;max-width:980px
 </section>
 <footer>
 <b>Autores:</b> Arthur Telles Menezes, Bruno Machado Becker, Carlos Ícaro Diógenes Alencar, Dandara Maria Barroso Camelo e Nicole Veras Kauling · Universidade Estadual do Ceará.<br>
-<b>Base:</b> Duettmann et al., 2020 (Transplant International); Lee et al., 2019 (Annals of Surgery); Salybekov et al., 2025 (J Clin Med).
+<b>Base:</b> Duettmann et al., 2020 (Transplant International); Lee et al., 2019 (Annals of Surgery); Salybekov et al., 2025 (J Clin Med). <br> 
+Elaborado com pequeno contribuição de IA (Claude.ia)
 </footer>
 <script>
 const $=i=>document.getElementById(i);
-let T=36.6,S=118,D=76,tgT=36.6,tgS=118,tgD=76,online=true,missed=false,state="ok",hT=[],hP=[],last=Date.now();
+let T=36.6,S=118,D=76,tgT=36.6,tgS=118,tgD=76,online=true,missed=false,state="ok",hT=[],hP=[],last=Date.now(),H=72,tgH=72,O=98,tgO=98,E=12,tgE=12,R=0,tgR=0,poc="idle",hH=[],hO=[];
 const hh=()=>new Date().toLocaleTimeString("pt-BR");
 function ev(t){const l=document.createElement("li");l.innerHTML="<time>"+hh()+"</time>"+t;$("feed").prepend(l)}
 function spark(el,h,lo,hi){el.setAttribute("points",h.map((v,i)=>(i*96/29).toFixed(1)+","+(34-(v-lo)/(hi-lo)*32).toFixed(1)).join(" "))}
 function setPill(txt,cls){const p=$("pill");p.textContent=txt;p.className="pill "+cls}
 function tick(){
   T+=(tgT-T)*.15+(Math.random()-.5)*.06;S+=(tgS-S)*.15+(Math.random()-.5)*2;D+=(tgD-D)*.15+(Math.random()-.5)*1.5;
-  hT.push(T);hP.push(S);if(hT.length>30){hT.shift();hP.shift()}
-  spark($("sT"),hT,36,39);spark($("sP"),hP,100,170);
-  const fever=T>=38,bp=S>=140||S<100;
+  H+=(tgH-H)*.15+(Math.random()-.5)*1.5;O+=(tgO-O)*.15+(Math.random()-.5)*.3;E+=(tgE-E)*.15;R+=(tgR-R)*.15;
+  hT.push(T);hP.push(S);hH.push(H);hO.push(O);if(hT.length>30){hT.shift();hP.shift();hH.shift();hO.shift()}
+  spark($("sT"),hT,36,39);spark($("sP"),hP,100,170);spark($("sH"),hH,55,130);spark($("sO"),hO,88,100);
+  const fever=T>=38,bp=S>=140||S<100,hr=H>=110,ox=O<94,ed=E>=50;
   $("vT").innerHTML=T.toFixed(1).replace(".",",")+"<small>°C</small>";$("vT").className="val"+(fever?" bad":"");
   $("vP").innerHTML=Math.round(S)+"/"+Math.round(D)+"<small>mmHg</small>";$("vP").className="val"+(bp?" bad":"");
   $("vM").textContent=missed?"Dose não registrada":"Dose registrada ✓";$("vM").className="val"+(missed?" bad":"");$("vM").style.fontSize="1.4rem";
+  $("vH").innerHTML=Math.round(H)+"<small>bpm</small>";$("vH").className="val"+(hr?" bad":"");
+  $("vO").innerHTML=Math.round(O)+"<small>%</small>";$("vO").className="val"+(ox?" bad":"");
+  $("vE").innerHTML=Math.round(E)+"<small>%</small>";$("vE").className="val"+(ed?" bad":"");
+  
+  
   if(!online)return;
   last=Date.now();$("upd").textContent="Atualizado às "+hh();
-  const al=[];if(fever)al.push("febre");if(bp)al.push("alteração da pressão arterial");if(missed)al.push("dose não registrada");
+  const al=[];if(fever)al.push("febre");if(bp)al.push("alteração da pressão arterial");if(hr)al.push("frequência cardíaca elevada");if(ox)al.push("saturação de oxigênio baixa");if(ed)al.push("taxa de resposta imunológica elevada");if(missed)al.push("dose não registrada");
   const ns=al.length?al.join(", "):"ok";
   if(ns!==state){state=ns;if(al.length){setPill("Atenção","al");ev("Alerta automático: "+al.join(", ")+". "+(missed?"Lembrete enviado ao paciente. ":"")+"Equipe avalia e pode chamar por telemedicina.")}else{setPill("Estável","");ev("Sinais voltaram ao esperado.")}}
 }
@@ -130,7 +146,11 @@ ev("Sensores conectados. Monitoramento iniciado.");setInterval(tick,1000);tick()
 $("b1").onclick=()=>{tgT=38.5;tgS=152;tgD=94};
 $("b2").onclick=()=>{missed=true};
 $("b3").onclick=()=>{if(!online)return;online=false;$("dot").className="dot off";setPill("Sem conexão","off");$("upd").textContent="Último dado às "+hh()+". Sem internet, a equipe não recebe os dados.";ev("Conexão perdida. Dados não chegam à equipe.")};
-$("b4").onclick=()=>{tgT=36.6;tgS=118;tgD=76;missed=false;if(!online){online=true;$("dot").className="dot";state="reset";ev("Conexão restabelecida.")}};
+$("b5").onclick=()=>{tgE=68};
+$("b8").onclick=()=>{tgH=118;tgO=91};
+
+$("b7").onclick=()=>{ev(online?(state!=="ok"?"Teleconsulta iniciada com o paciente após o alerta.":"Teleconsulta de rotina iniciada."):"Sem conexão: teleconsulta indisponível.")};
+$("b4").onclick=()=>{tgT=36.6;tgS=118;tgD=76;tgH=72;tgO=98;tgE=12;tgR=0;poc="idle";missed=false;if(!online){online=true;$("dot").className="dot";state="reset";ev("Conexão restabelecida.")}};
 const io=new IntersectionObserver(e=>e.forEach(x=>{if(x.isIntersecting)x.target.classList.add("in")}),{threshold:.15});
 document.querySelectorAll(".rv").forEach(e=>io.observe(e));
 </script>
